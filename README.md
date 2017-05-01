@@ -1,7 +1,7 @@
 iLOrest Ansible Role
 ======
 
-[![Build Status](https://travis-ci.org/HewlettPackard/puppet-ilorest-module.svg?branch=master)](https://travis-ci.org/HewlettPackard/puppet-ilorest-module)
+[![Build Status](https://travis-ci.org/HewlettPackard/ansible-ilorest-role.svg?branch=master)](https://travis-ci.org/HewlettPackard/ansible-ilorest-role)
 [![GitHub license](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://raw.githubusercontent.com/HewlettPackard/puppet-ilorest-module/master/LICENSE)
 
 #### Table of Contents
