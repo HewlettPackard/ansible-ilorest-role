@@ -1,0 +1,53 @@
+---
+# YAML file for DIA servers iLO service
+- hosts: gen8
+  vars:
+    ilo_user: ilo_user
+    ilo_pass: ****
+    snmp_mode: Agentless
+    snmp_alerts: True
+    ReadCommunities: ['public','public']
+    TrapCommunities: ['public']
+    AlertDestin: ['10.100.1.1','10.100.3.2']
+    
+  connection: local
+  gather_facts: False
+
+  tasks:
+     - name: Config SNMP for iLO
+       config_snmp_module:
+         dia_ilo_inventory_name: "{{ inventory_hostname }}"
+         dia_ilo_ip: "{{ ilo_ip }}"
+         dia_ilo_user: "{{ ilo_user }}"
+         dia_ilo_pass: "{{ ilo_pass }}"
+         snmp_mode: "{{ snmp_mode }}"
+         snmp_alerts: "{{ snmp_alerts }}"
+         ReadCommunities: "{{ ReadCommunities }}"
+         TrapCommunities: "{{ TrapCommunities }}"
+         AlertDestin: "{{ AlertDestin }}"
+
+- hosts: gen9
+  vars:
+    ilo_user: ilo_user
+    ilo_pass: ****
+    snmp_mode: Agentless
+    snmp_alerts: True
+    ReadCommunities: ['public','']
+    TrapCommunities: ['public','']
+    AlertDestin: ['10.100.1.110','10.100.3.4']
+
+  connection: local
+  gather_facts: False
+
+  tasks:
+     - name: Config SNMP for iLO
+       config_snmp_module:
+         dia_ilo_inventory_name: "{{ inventory_hostname }}"
+         dia_ilo_ip: "{{ ilo_ip }}"
+         dia_ilo_user: "{{ ilo_user }}"
+         dia_ilo_pass: "{{ ilo_pass }}"
+         snmp_mode: "{{ snmp_mode }}"
+         snmp_alerts: "{{ snmp_alerts }}"
+         ReadCommunities: "{{ ReadCommunities }}"
+         TrapCommunities: "{{ TrapCommunities }}"
+         AlertDestin: "{{ AlertDestin }}"

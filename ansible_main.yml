@@ -1,0 +1,40 @@
+---
+#test
+- hosts: all
+  gather_facts: False
+
+  pre_tasks:
+     - name: pre_task install python-ilorest-library
+       become: yes
+       pip: 
+         name: python-ilorest-library
+     #- name: pre_task copy hprest_chif.so
+     #  become: yes
+     #  copy:
+     #    src: hprest_chif.so
+     #    dest: /usr/lib
+
+  tasks:
+     - name: obtain iLO IP address
+       # Escalates user to run this task since local iLO login
+       # Ensure that ansible_become_pass is set in hosts
+       become: yes
+       get_ilo_ip: 
+         name: "Get iLO"
+         enabled: True
+
+     - name: Enable secure boot
+       become: yes
+       ex05_enable_secure_boot:
+         name: "Enable secure boot"
+         enabled: True
+         boot_enabled: False
+
+     - name: Add iLO user account
+       become: yes
+       ex10_add_ilo_user_account:
+         name: "Add ilo user account"
+         enabled: True
+         new_loginname: 'name'
+         new_username: 'user'
+         new_password: 'password'

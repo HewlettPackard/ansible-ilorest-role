@@ -1,0 +1,22 @@
+---
+# YAML file for DIA servers iLO service
+- hosts: all
+  vars:
+    ilo_user: ilo_user
+    ilo_pass: ****
+    action: InstallFromURI
+    url: http://IPaddress/ilo4_244.bin 
+    flag: True
+  connection: local
+  gather_facts: False
+
+  tasks:
+     - name: update firmware
+       update_firmware_module:
+         dia_ilo_inventory_name: "{{ inventory_hostname }}"
+         dia_ilo_ip: "{{ ilo_ip }}"
+         dia_ilo_user: "{{ ilo_user }}"
+         dia_ilo_pass: "{{ ilo_pass }}"
+         action: "{{ action }}"
+         url: "{{ url }}"
+         flag: "{{ flag }}"
