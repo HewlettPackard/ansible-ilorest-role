@@ -11,9 +11,9 @@ iLOrest Ansible Role
 3. [Writing a Module](#module)
 4. [Writing a Playbook](#playbook)
 5. [Usage](#usage)
-5. [History](#history)
-5. [License](#license)
-5. [Authors](#authors)
+6. [History](#history)
+7. [License](#license)
+8. [Authors](#authors)
 
 ## Overview
 
