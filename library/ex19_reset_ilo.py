@@ -31,12 +31,12 @@ EXAMPLES = '''
 '''
 
 import sys
-from ilorest.rest.v1_helper import ServerDownOrUnreachableError
+from redfish.rest.v1 import ServerDownOrUnreachableError
 
 #import sys
 import logging
 import json
-from ilorest import AuthMethod, ilorest_logger, redfish_client
+from redfish import AuthMethod, ilorest_logger, redfish_client
 
 #Config logger used by HPE Restful library
 LOGGERFILE = "RedfishApiExamples.log"
