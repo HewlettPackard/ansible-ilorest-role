@@ -35,12 +35,12 @@ from redfish.rest.v1 import ServerDownOrUnreachableError
 #import sys
 import logging
 import json
-from redfish import AuthMethod, ilorest_logger, redfish_client
+from redfish import AuthMethod, redfish_logger, redfish_client
 
 #Config logger used by HPE Restful library
 LOGGERFILE = "RedfishApiExamples.log"
 LOGGERFORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-LOGGER = ilorest_logger(LOGGERFILE, LOGGERFORMAT, logging.INFO)
+LOGGER = redfish_logger(LOGGERFILE, LOGGERFORMAT, logging.INFO)
 LOGGER.info("HPE Redfish API examples")
 
 class RedfishObject(object):
