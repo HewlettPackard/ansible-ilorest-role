@@ -1,82 +1,94 @@
 #!/usr/bin/python
-import ssl
-import urllib2
-from urlparse import urlparse
-import httplib
-import base64
-import json
-import hashlib
-import gzip
-import StringIO
-import sys
+# -*- coding: utf-8 -*-
+###
+# Copyright (2016-2017) Hewlett Packard Enterprise Development LP
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# You may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+###
+
+from __future__ import (absolute_import, division, print_function)
+__metaclass__ = type
+
+ANSIBLE_METADATA = {'metadata_version': '1.1',
+                    'status': ['preview'],
+                    'supported_by': 'community'}
 
 DOCUMENTATION = '''
 ---
-module: oneview_enclosure
-short_description: Manage OneView Enclosure resources.
+module: mount_vmedia_module
+short_description: Performs the mount operations for Virtual Medias.
 description:
-    - Provides an interface to manage Enclosure resources. Can add, update, or remove.
+    - Provides an interface to manage Virtual Media Mounts.
+version_added: "<Not currently merged into Ansible>"
 requirements:
-    - "python >= 2.7.9"
-    - "hpOneView"
-author: "Mariana Kreisig (@marikrg)"
+    - "python-ilorest-library >= 1.0.0"
+author: "Jack Garcia (@LumbaJack)"
 options:
-    config:
-      description:
-        - Path to a .json configuration file containing the OneView client configuration.
-      required: true
+    dia_ilo_inventory_name:
+        description: String containing the iLo's inventory name
+        required: true
+    dia_ilo_ip:
+        description: String containing the iLo's IP address
+        required: true
+    dia_ilo_user:
+        description: String containing the iLo's user name
+        required: true
+    dia_ilo_pass:
+        description: String containing the iLo's password
+        required: true
+    iso_url:
+        description: String containing the URL to the ISO image
+        required: true
+    flag:
+        description: Boolean indicating whether to favor href links over members of the 'Items' array
+        required: true
     state:
         description:
-            - Indicates the desired state for the Enclosure resource.
-              'present' will ensure data properties are compliant to OneView.
-              'absent' will remove the resource from OneView, if it exists.
+            - Indicates the desired state for the Virtual Media.
+              C(present) will ensure the Virtual Media is mounted.
+              C(absent) will remove the mounted Virtual Media, if it exists.
         choices: ['present', 'absent']
-    data:
-      description:
-        - List with the Enclosure properties.
-      required: true
-notes:
-    - A sample configuration file for the config parameter can be found at&colon;
-      https://github.hpe.com/Rainforest/oneview-ansible/blob/master/examples/oneview_config.json^M
+        default: present
 '''
 
 EXAMPLES = '''
-- name: Ensure that an Enclosure is present using the default configuration
-  oneview_enclosure:
-    config: "{{ config_file_path }}"
-    state: present
-    data:
-      enclosureGroupUri : {{ enclosure_group_uri }},
-      hostname : {{ enclosure_hostname }},
-      username : {{ enclosure_username }},
-      password : {{ enclosure_password }},
-      name: 'Test-Enclosure'
-      licensingIntent : "OneView"
-- name: Updates the enclosure to have a name of "Test-Enclosure-Renamed".
-  oneview_enclosure:
-    config: "{{ config_file_path }}"
-    state: present
-    data:
-      name: 'Test-Enclosure'
-      newName : "Test-Enclosure-Renamed
-- name: Ensure that enclosure is absent
-  oneview_enclosure:
-    config: "{{ config_file_path }}"
-    state: absent
-    data:
-      name: 'Test-Enclosure'
 
 '''
 
+import base64
+import gzip
+import hashlib
+import httplib
+import json
+import StringIO
+import ssl
+import sys
+import urllib2
+
+from ansible.module_utils.basic import *
+from urlparse import urlparse
+
+
 def get_type(obj):
-		    typever = obj['Type']
-		    typesplit = typever.split('.')
-	            return typesplit[0] + '.' + typesplit[1]
+    typever = obj['Type']
+    typesplit = typever.split('.')
+    return typesplit[0] + '.' + typesplit[1]
+
 
 def rest_op(operation, host, suburi, request_headers, request_body, iLO_loginname, iLO_password, x_auth_token=None, enforce_SSL=True):
 
     url = urlparse('https://' + host + suburi)
-    #url = urlparse('http://' + host + suburi)
+    # url = urlparse('http://' + host + suburi)
     if request_headers is None:
         request_headers = dict()
 
@@ -93,11 +105,8 @@ def rest_op(operation, host, suburi, request_headers, request_body, iLO_loginnam
         if url.scheme == 'https':
             # New in Python 2.7.9, SSL enforcement is defaulted on, but can be opted-out of.
             # The below case is the Opt-Out condition and should be used with GREAT caution.
-            if( sys.version_info.major == 2 and
-                sys.version_info.minor == 7 and
-                sys.version_info.micro >= 9 and
-                enforce_SSL            == False):
-                cont=ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+            if(sys.version_info.major == 2 and sys.version_info.minor == 7 and sys.version_info.micro >= 9 and enforce_SSL is False):
+                cont = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
                 cont.verify_mode = ssl.CERT_NONE
                 conn = httplib.HTTPSConnection(host=url.netloc, strict=True, context=cont)
             else:
@@ -115,9 +124,9 @@ def rest_op(operation, host, suburi, request_headers, request_body, iLO_loginnam
 
         # NOTE:  this makes sure the headers names are all lower cases because HTTP says they are case insensitive
         headers = dict((x.lower(), y) for x, y in resp.getheaders())
-	
+
         # Follow HTTP redirect
-        if resp.status >= 300 and resp.status < 400 and 'location' in  headers:
+        if resp.status >= 300 and resp.status < 400 and 'location' in headers:
             url = urlparse(headers['location'])
             redir_count -= 1
         else:
@@ -126,7 +135,7 @@ def rest_op(operation, host, suburi, request_headers, request_body, iLO_loginnam
     response = dict()
     try:
         response = json.loads(body.decode('utf-8'))
-    except ValueError: # if it doesn't decode as json
+    except ValueError:  # if it doesn't decode as json
         # NOTE:  resources may return gzipped content
         # try to decode as gzip (we should check the headers for Content-Encoding=gzip)
         try:
@@ -147,10 +156,13 @@ def rest_get(host, suburi, request_headers, iLO_loginname, iLO_password):
     return rest_op('GET', host, suburi, request_headers, None, iLO_loginname, iLO_password)
     # NOTE:  be prepared for various HTTP responses including 500, 404, etc.
 
+
 def rest_patch(server, suburi, request_headers, request_body, iLO_loginname, iLO_password):
-    if not isinstance(request_headers, dict):  request_headers = dict()
+    if not isinstance(request_headers, dict):
+        request_headers = dict()
     request_headers['Content-Type'] = 'application/json'
     return rest_op('PATCH', server, suburi, request_headers, request_body, iLO_loginname, iLO_password)
+
 
 def collection(host, collection_uri, request_headers, iLO_loginname, iLO_password):
 
@@ -211,7 +223,8 @@ def collection(host, collection_uri, request_headers, iLO_loginname, iLO_passwor
         else:
             break
 
-def mount_virtual_media_dvd_iso(host, iLO_loginname, iLO_password, iso_url = None, boot_on_next_server_reset = None):
+
+def mount_virtual_media_dvd_iso(host, iLO_loginname, iLO_password, iso_url=None, boot_on_next_server_reset=None):
     # for each system in the systems collection at /rest/v1/Systems
     for status, headers, manager, memberuri in collection(host, '/rest/v1/Managers', None, iLO_loginname, iLO_password):
         # verify expected type
@@ -226,7 +239,7 @@ def mount_virtual_media_dvd_iso(host, iLO_loginname, iLO_password, iso_url = Non
             # hint:  don't limit to version 0 here as we will rev to 1.0 at some point hopefully with minimal changes
             assert(get_type(vm) == 'VirtualMedia.0' or get_type(vm) == 'VirtualMedia.1')
             if 'DVD' in vm['MediaTypes']:
-                #iso_url = 'http://blofly.usa.hp.com/mrepo/SLES-11-SP4-x86_64/iso/SLES-11-SP4-DVD-x86_64-GM-DVD1.iso'
+                # iso_url = 'http://blofly.usa.hp.com/mrepo/SLES-11-SP4-x86_64/iso/SLES-11-SP4-DVD-x86_64-GM-DVD1.iso'
                 mount = {'Image': iso_url}
                 # only add this if we are mounting and user specified something to set
                 if iso_url is not None and boot_on_next_server_reset is not None:
@@ -242,27 +255,26 @@ def mount_virtual_media_dvd_iso(host, iLO_loginname, iLO_password, iso_url = Non
                     sys.exit(1)
         break
 
-def main():  
-    module = AnsibleModule(         
-        argument_spec = dict(             
-            dia_ilo_inventory_name=dict(required=True, type='str'),             
-            dia_ilo_ip      = dict(required=True, type='str'),             
-            dia_ilo_user    = dict(required=True, type='str'),
-            dia_ilo_pass    = dict(required=True, type='str'),             
-            iso_url         = dict(required=True, type='str'),
-            flag            = dict(required=True, type='bool'),             
-            state           = dict(default='present', choices=['present', 'absent'])))  
-    dia_ilo_inventory_name = module.params['dia_ilo_inventory_name']     
-    dia_ilo_ip = module.params['dia_ilo_ip']     
-    dia_ilo_user = module.params['dia_ilo_user']     
+
+def main():
+    module = AnsibleModule(
+        argument_spec=dict(
+            dia_ilo_inventory_name=dict(required=True, type='str'),
+            dia_ilo_ip=dict(required=True, type='str'),
+            dia_ilo_pass=dict(required=True, type='str'),
+            dia_ilo_user=dict(required=True, type='str'),
+            flag=dict(required=True, type='bool'),
+            iso_url=dict(required=True, type='str'),
+            state=dict(default='present', choices=['present', 'absent'])))
+    dia_ilo_inventory_name = module.params['dia_ilo_inventory_name']
+    dia_ilo_ip = module.params['dia_ilo_ip']
     dia_ilo_pass = module.params['dia_ilo_pass']
-    iso_url = module.params['iso_url']
+    dia_ilo_user = module.params['dia_ilo_user']
     flag = module.params['flag']
-    mount_virtual_media_dvd_iso(dia_ilo_ip, dia_ilo_user, dia_ilo_pass, iso_url, flag)     
+    iso_url = module.params['iso_url']
+    mount_virtual_media_dvd_iso(dia_ilo_ip, dia_ilo_user, dia_ilo_pass, iso_url, flag)
     module.exit_json(changed=True)
 
-from ansible.module_utils.basic import *
 
 if __name__ == '__main__':
     main()
-
