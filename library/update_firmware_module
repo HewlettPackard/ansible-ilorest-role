@@ -37,9 +37,6 @@ options:
     action:
         description: String containing the expected action to performed with the firmware. i.e.: 'InstallFromURI'
         required: true
-    dia_ilo_inventory_name:
-        description: String containing the iLo's inventory name
-        required: true
     dia_ilo_ip:
         description: String containing the iLo's IP address
         required: true
@@ -55,8 +52,8 @@ options:
     state:
         description:
             - Indicates the desired state for the Server Module.
-              C(present) and C(absent) currently perform the same action: Run the update operation with the specified action and parameters.
-        choices: ['present', 'absent']
+              C(present) Run the update operation with the specified action and parameters. This is non-idempotent.
+        choices: ['present']
         default: present
     url:
         description: String containing the URL to the firmware.
@@ -77,7 +74,7 @@ import ssl
 import sys
 import urllib2
 
-from ansible.module_utils.basic import *
+from ansible.module_utils.basic import AnsibleModule
 from urlparse import urlparse
 
 
@@ -226,16 +223,6 @@ def collection(host, collection_uri, request_headers, iLO_loginname, iLO_passwor
             break
 
 
-def print_extended_error(extended_error):
-    messages = render_extended_error_message_list(extended_error)
-    msgcnt = 0
-    for msg in messages:
-        print('\t' + msg)
-        msgcnt += 1
-    if msgcnt == 0:
-        print
-
-
 def update_firmware(host, iLO_loginname, iLO_password, action, fw_url, flag):
 
     # for each system in the systems collection at /rest/v1/Systems
@@ -251,8 +238,6 @@ def update_firmware(host, iLO_loginname, iLO_password, action, fw_url, flag):
 
         # perform the POST
         status, headers, response = rest_post(host, '/rest/v1/Managers/1/UpdateService', None, config, iLO_loginname, iLO_password)
-        # print_extended_error(response)
-        # assert(status == 200)
         if status == 200:
             print('Operation Successed.')
         else:
@@ -264,15 +249,13 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             action=dict(required=True, type='str'),
-            dia_ilo_inventory_name=dict(required=True, type='str'),
             dia_ilo_ip=dict(required=True, type='str'),
             dia_ilo_pass=dict(required=True, type='str'),
             dia_ilo_user=dict(required=True, type='str'),
             flag=dict(required=True, type='bool'),
-            state=dict(default='present', choices=['present', 'absent']),
+            state=dict(default='present', choices=['present']),
             url=dict(required=True, type='str')))
     action = module.params['action']
-    dia_ilo_inventory_name = module.params['dia_ilo_inventory_name']
     dia_ilo_ip = module.params['dia_ilo_ip']
     dia_ilo_pass = module.params['dia_ilo_pass']
     dia_ilo_user = module.params['dia_ilo_user']
