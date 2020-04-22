@@ -1,0 +1,40 @@
+---
+- hosts: myhosts
+  connection: local
+  name: Set BIOS attribute - choose below
+  gather_facts: False
+
+  # BIOS attributes that have been tested
+  #
+  # Name                  Value
+  # --------------------------------------------------
+  # OsWatchdogTimer       Disabled / Enabled
+  # ProcVirtualization    Disabled / Enabled
+  # MemTest               Disabled / Enabled
+  # SriovGlobalEnable     Disabled / Enabled
+
+  vars:
+  - attribute_name: SriovGlobalEnable
+  - attribute_value: Enabled
+
+  tasks:
+
+  - name: Set BIOS attribute {{ attribute_name }} to {{ attribute_value }}
+    redfish_config:
+      category: Systems
+      command: SetBiosAttributes
+      bios_attribute_name: "{{ attribute_name }}"
+      bios_attribute_value: "{{ attribute_value }}"
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+    register: bios_attribute
+
+  - name: Reboot system to apply new BIOS settings
+    redfish_command:
+      category: Systems
+      command: PowerReboot
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+    when: bios_attribute.changed
