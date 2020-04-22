@@ -12,7 +12,7 @@
 
   tasks:
      - name: update firmware
-       update_firmware_module:
+       upload_firmware_ilo_repository:
          dia_ilo_inventory_name: "{{ inventory_hostname }}"
          dia_ilo_ip: "{{ ilo_ip }}"
          dia_ilo_user: "{{ ilo_user }}"

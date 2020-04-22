@@ -1,48 +1,25 @@
-# This is the default ansible 'hosts' file.
-#
-# It should live in /etc/ansible/hosts
-#
-#   - Comments begin with the '#' character
-#   - Blank lines are ignored
-#   - Groups of hosts are delimited by [header] elements
-#   - You can enter hostnames or ip addresses
-#   - A hostname/ip can be a member of multiple groups
+[master]
 
-# Ex 1: Ungrouped hosts, specify before any group headers.
+[hpe]
+hpe1       baseuri=172.16.55.31
+hpe2       baseuri=172.16.55.21
 
-## green.example.com
-## blue.example.com
-## 192.168.100.1
-## 192.168.100.10
+[myhosts:children]
+master
+hpe
 
-# Ex 2: A collection of hosts belonging to the 'webservers' group
+[myhosts:vars]
+# Credentials for OOB controller
+username=Administrator
+password=12iso*help
 
-## [webservers]
-## alpha.example.org
-## beta.example.org
-## 192.168.1.100
-## 192.168.1.110
+# Local directory where all results are placed
+rootdir=~/output_files
 
-# Example of passing over ssh password and username
+host="{{inventory_hostname}}"
 
-[iloservers]
-10.0.0.100 ansible_ssh_pass='password' ansible_ssh_user='username'
-
-# If you have multiple hosts following a pattern you can specify
-# them like this:
-
-## www[001:006].example.com
-
-# Ex 3: A collection of database servers in the 'dbservers' group
-
-## [dbservers]
-## 
-## db01.intranet.mydomain.net
-## db02.intranet.mydomain.net
-## 10.25.1.56
-## 10.25.1.57
-
-# Here's another example of host ranges, this time there are no
-# leading 0s:
-
-## db-[99:101]-node.example.com
+# For managing users
+id=3
+new_user=newuser123
+new_pass=myNewPass123
+role_id=User

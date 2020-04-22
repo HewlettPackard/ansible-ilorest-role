@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-# Copyright 2016 Hewlett Packard Enterprise Development, LP.
+ # Copyright 2019 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -13,229 +11,115 @@
  # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  # License for the specific language governing permissions and limitations
  # under the License.
- 
- 
-DOCUMENTATION = '''
----
-module: get_ilo_ip
-short_description: This module obtains the iLO IP address through local means
-'''
 
-EXAMPLES = '''
-- name: obtain iLO IP address
-  become: yes
-  get_ilo_ip:
-    name: "Get iLO IP"
-    enabled: True
-'''
+# -*- coding: utf-8 -*-
+"""
+An example of getting the Manager IP
+"""
 
 import sys
-from redfish.rest.v1 import ServerDownOrUnreachableError
-
-#import sys
-import logging
 import json
-from redfish import AuthMethod, redfish_logger, redfish_client
-
-#Config logger used by HPE Restful library
-LOGGERFILE = "RedfishApiExamples.log"
-LOGGERFORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-LOGGER = redfish_logger(LOGGERFILE, LOGGERFORMAT, logging.INFO)
-LOGGER.info("HPE Redfish API examples")
-
-class RedfishObject(object):
-    def __init__(self, host, login_account, login_password):
-        try:
-            self.redfish_client = redfish_client(base_url=host, \
-                      username=login_account, password=login_password, \
-                      default_prefix="/redfish/v1")
-        except:
-            raise
-        self.redfish_client.login(auth=AuthMethod.SESSION)
-        self.SYSTEMS_RESOURCES = self.ex1_get_resource_directory()
-        self.MESSAGE_REGISTRIES = self.ex2_get_base_registry()
-
-    def __del__(self):
-        try:
-            self.redfish_client.logout()
-        except AttributeError, excp:
-            pass
-
-    def search_for_type(self, type):
-        instances = []
-
-        for item in self.SYSTEMS_RESOURCES["resources"]:
-            foundsettings = False
-
-            if "@odata.type" in item and type.lower() in \
-                                                    item["@odata.type"].lower():
-                for entry in self.SYSTEMS_RESOURCES["resources"]:
-                    if (item["@odata.id"] + "/settings/").lower() == \
-                                                (entry["@odata.id"]).lower():
-                        foundsettings = True
-
-                if not foundsettings:
-                    instances.append(item)
-
-        if not instances:
-            sys.stderr.write("\t'%s' resource or feature is not " \
-                                            "supported on this system\n" % type)
-        return instances
-
-    def error_handler(self, response):
-        if not self.MESSAGE_REGISTRIES:
-            sys.stderr.write("ERROR: No message registries found.")
-
-        try:
-            message = json.loads(response.text)
-            newmessage = message["error"]["@Message.ExtendedInfo"][0]\
-                                                        ["MessageId"].split(".")
-        except:
-            sys.stdout.write("\tNo extended error information returned by " \
-                                                                    "iLO.\n")
-            return
-
-        for err_mesg in self.MESSAGE_REGISTRIES:
-            if err_mesg != newmessage[0]:
-                continue
-            else:
-                for err_entry in self.MESSAGE_REGISTRIES[err_mesg]:
-                    if err_entry == newmessage[3]:
-                        sys.stdout.write("\tiLO return code %s: %s\n" % (\
-                                 message["error"]["@Message.ExtendedInfo"][0]\
-                                 ["MessageId"], self.MESSAGE_REGISTRIES\
-                                 [err_mesg][err_entry]["Description"]))
-
-    def redfish_get(self, suburi):
-        """REDFISH GET"""
-        return self.redfish_client.get(path=suburi)
-
-    def redfish_patch(self, suburi, request_body, optionalpassword=None):
-        """REDFISH PATCH"""
-        sys.stdout.write("PATCH " + str(request_body) + " to " + suburi + "\n")
-        response = self.redfish_client.patch(path=suburi, body=request_body, \
-                                            optionalpassword=optionalpassword)
-        sys.stdout.write("PATCH response = " + str(response.status) + "\n")
-
-        return response
-
-    def redfish_put(self, suburi, request_body, optionalpassword=None):
-        """REDFISH PUT"""
-        sys.stdout.write("PUT " + str(request_body) + " to " + suburi + "\n")
-        response = self.redfish_client.put(path=suburi, body=request_body, \
-                                            optionalpassword=optionalpassword)
-        sys.stdout.write("PUT response = " + str(response.status) + "\n")
-
-        return response
-
-
-    def redfish_post(self, suburi, request_body):
-        """REDFISH POST"""
-        sys.stdout.write("POST " + str(request_body) + " to " + suburi + "\n")
-        response = self.redfish_client.post(path=suburi, body=request_body)
-        sys.stdout.write("POST response = " + str(response.status) + "\n")
-
-        return response
-
-
-    def redfish_delete(self, suburi):
-        """REDFISH DELETE"""
-        sys.stdout.write("DELETE " + suburi + "\n")
-        response = self.redfish_client.delete(path=suburi)
-        sys.stdout.write("DELETE response = " + str(response.status) + "\n")
-
-        return response
-
-
-    def ex1_get_resource_directory(self):
-        response = self.redfish_get("/redfish/v1/resourcedirectory/")
-        resources = {}
-    
-        if response.status == 200:
-            resources["resources"] = response.dict["Instances"]
-            return resources
-        else:
-            sys.stderr.write("\tResource directory missing at " \
-                                        "/redfish/v1/resourcedirectory" + "\n")
-    
-    def ex2_get_base_registry(self):
-        response = self.redfish_get("/redfish/v1/Registries/")
-        messages = {}
-        location = None
-        
-        for entry in response.dict["Members"]:
-            if not [x for x in ["/Base/", "/iLO/"] if x in entry["@odata.id"]]:
-                continue
-            else:
-                registry = self.redfish_get(entry["@odata.id"])
-            
-            for location in registry.dict["Location"]:  
-                if "extref" in location["Uri"]:
-                    location = location["Uri"]["extref"]
-                else:
-                    location = location["Uri"]
-                reg_resp = self.redfish_get(location)
-    
-                if reg_resp.status == 200:
-                    messages[reg_resp.dict["RegistryPrefix"]] = \
-                                                    reg_resp.dict["Messages"]
-                else:
-                    sys.stdout.write("\t" + reg_resp.dict["RegistryPrefix"] + \
-                                            " not found at " + location + "\n")
-    
-        return messages
-
-#Main function
-def ex52_get_ilo_ip(redfishobj):
-    #sys.stdout.write("\nEXAMPLE 52: Get iLO IP locally\n")
-    instances = redfishobj.search_for_type("Manager.")
-
-    for instance in instances:
-        response = redfishobj.redfish_get(instance["@odata.id"])
-        ethernet_rsp =  redfishobj.redfish_get(response.dict\
-                                    ["EthernetInterfaces"]["@odata.id"])
-        
-        for item in ethernet_rsp.dict["Members"]:
-            item_rsp = redfishobj.redfish_get(item["@odata.id"])
-            if not item_rsp.dict["IPv4Addresses"][0]["Address"] == "0.0.0.0":
-                #Return iLO IP
-                return item_rsp.dict["IPv4Addresses"][0]\
-                                 ["Address"]
-        redfishobj.error_handler(response)
-
+from redfish import RedfishClient
+from redfish.rest.v1 import ServerDownOrUnreachableError
 #Instantiating module class        
 from ansible.module_utils.basic import *
-    
-def main():
+
+#from get_resource_directory import get_resource_directory
+
+def get_resource_directory(redfishobj):
+
+    try:
+        resource_uri = redfishobj.root.obj.Oem.Hpe.Links.ResourceDirectory['@odata.id']
+    except KeyError:
+        sys.stderr.write("Resource directory is only available on HPE servers.\n")
+        return None
+
+    response = redfishobj.get(resource_uri)
+    resources = []
+
+    if response.status == 200:
+        sys.stdout.write("\tFound resource directory at /redfish/v1/resourcedirectory" + "\n\n")
+        resources = response.dict["Instances"]
+    else:
+        sys.stderr.write("\tResource directory missing at /redfish/v1/resourcedirectory" + "\n")
+
+    return resources
+
+
+def get_ilo_ip(_redfishobj, DISABLE_RESOURCE_DIR):
+    ethernet_data = {}
+
+    resource_instances = get_resource_directory(_redfishobj)
+    if DISABLE_RESOURCE_DIR or not resource_instances:
+        #if we do not have a resource directory or want to force it's non use to find the
+        #relevant URI
+        managers_uri = _redfishobj.root.obj['Managers']['@odata.id']
+        managers_response = _redfishobj.get(managers_uri)
+        managers_members_uri = next(iter(managers_response.obj['Members']))['@odata.id']
+        managers_members_response = _redfishobj.get(managers_members_uri)
+        manager_ethernet_interfaces = managers_members_response.obj['EthernetInterfaces']\
+                                                                                    ['@odata.id']
+        manager_ethernet_interfaces_response = _redfishobj.get(manager_ethernet_interfaces)
+        manager_ethernet_interfaces_members = manager_ethernet_interfaces_response.\
+                                                            obj['Members']
+        for _member in manager_ethernet_interfaces_members:
+            _tmp = _redfishobj.get(_member['@odata.id']).obj
+            ethernet_data[_member['@odata.id']] = _tmp
+    else:
+        for instance in resource_instances:
+            #Use Resource directory to find the relevant URI
+            if '#EthernetInterfaceCollection.' in instance['@odata.type'] and 'Managers' in \
+                                                                        instance['@odata.id']:
+                ethernet_uri = instance['@odata.id']
+                ethernet_interfaces = _redfishobj.get(ethernet_uri).obj['Members']
+                for _ethernet_interface in ethernet_interfaces:
+                    ethernet_data[_ethernet_interface['@odata.id']] = _redfishobj.\
+                                                        get(_ethernet_interface['@odata.id']).dict
+                break
+
+    if ethernet_data:
+        for ethernet_interface in ethernet_data:
+            sys.stdout.write("\n\nShowing iLO IPv4 Address Info on: %s\n\n" % ethernet_interface)
+            #print(json.dumps(ethernet_data[ethernet_interface]['IPv4Addresses'],\
+            #                                                            indent=4, sort_keys=True))
+    return ethernet_data
+
+if __name__ == "__main__":
+    # When running on the server locally use the following commented values
+    #SYSTEM_URL = None
+    #LOGIN_ACCOUNT = None
+    #LOGIN_PASSWORD = None
 
     module = AnsibleModule(
         argument_spec = dict(
-            state     = dict(default='present', choices=['present', 'absent']),
             name      = dict(required=True),
             enabled   = dict(required=True, type='bool'),
-            something = dict(aliases=['whatever'])
         )
     )
-    
-    # When running on the server locally use the following commented values
-    # While this example can be run remotely, it is used locally to locate the
-    # iLO IP address
-    iLO_https_url = "blobstore://."
-    iLO_account = "None"
-    iLO_password = "None"
+
+    # When running remotely connect using the secured (https://) address,
+    # account name, and password to send https requests
+    # SYSTEM_URL acceptable examples:
+    # "https://10.0.0.100"
+    # "https://ilo.hostname"
+    SYSTEM_URL = "blobstore://."
+    LOGIN_ACCOUNT = None
+    LOGIN_PASSWORD = None
+
+    # flag to force disable resource directory. Resource directory and associated operations are
+    # intended for HPE servers.
+    DISABLE_RESOURCE_DIR = False
 
     try:
-        REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
-    except ServerDownOrUnreachableError, excp:
-        sys.stderr.write("ERROR: server not reachable or doesn't support " \
-                                                                "RedFish.\n")
+        # Create a Redfish client object
+        REDFISHOBJ = RedfishClient(base_url=SYSTEM_URL, username=LOGIN_ACCOUNT, \
+                                                                            password=LOGIN_PASSWORD)
+        # Login with the Redfish client
+        REDFISHOBJ.login()
+    except ServerDownOrUnreachableError as excp:
+        sys.stderr.write("ERROR: server not reachable or does not support RedFish.\n")
         sys.exit()
-    except Exception, excp:
-        raise excp
-    #Outputs MUST be valid JSON
-    print ex52_get_ilo_ip(REDFISH_OBJ)
-    #Using -v with ansible run will display this info
-    module.exit_json(changed=True, ilo_ip=str(ex52_get_ilo_ip(REDFISH_OBJ)))
 
-if __name__ == "__main__":
-    main()
+    ilo_ip = get_ilo_ip(REDFISHOBJ, DISABLE_RESOURCE_DIR)
+    REDFISHOBJ.logout()
+    module.exit_json(changed=True, msg=ilo_ip)

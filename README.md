@@ -1,23 +1,13 @@
 iLOrest Ansible Role
 ======
-
-[![Build Status](https://travis-ci.org/HewlettPackard/ansible-ilorest-role.svg?branch=master)](https://travis-ci.org/HewlettPackard/ansible-ilorest-role)
-[![GitHub license](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://raw.githubusercontent.com/HewlettPackard/puppet-ilorest-module/master/LICENSE)
-
-#### Table of Contents
-
-1. [Overview](#overview)
-2. [Usage](#usage)
-3. [Writing a Module](#module)
-4. [Writing a Playbook](#playbook)
-5. [Usage](#usage)
-6. [History](#history)
-7. [License](#license)
-8. [Authors](#authors)
-
 ## Overview
 
-This Ansible iLO REST role for HPE iLO is intended to provide an simple solution for user to manage server setting
+This Ansible iLO REST role for HPE iLO is intended to provide an simple solution for user to manage server setting.  In addition to using ilorest_library, some of the playbooks also uses redfish_command, redfish_config and redfish_info from ansible package.
+
+## Install
+
+To install ansible on linux,
+pip install ansible
 
 ## Usage
 
@@ -31,15 +21,12 @@ A verbose version can be run with
 
 `ansible-playbook restart_server.yml -v`
 
-`ansible_main.yml` is the updated playbook.
 
 ## Module
 
 The example modules provided here are based off the example scripts in the [python-ilorest-library](https://github.com/HewlettPackard/python-ilorest-library/). These are run through local login, thus ensuring playbooks will work for every assigned server without issue.
 
-Due to the nature of ansible, and the need for modules to be self-contained, we have to integrate the contents of `_restobject.py` and `_redfishobject.py` into our module first. 
-
-Additionally, we need the boilerplate code from `ansible.module_tils.basic`:
+we need the boilerplate code from `ansible.module_tils.basic`:
 
 ```
 from ansible.module_utils.basic import AnsibleModule
@@ -87,29 +74,3 @@ Debug core module can be used to return debug messages.
 - name: Display all variables/facts known for a host
   debug: var=hostvars[inventory_hostname] verbosity=4
   ```
-
-## History
-
-* 05/01/2017: Initial Commit
-
-## License
-
-Copyright 2017 Hewlett Packard Enterprise Development LP
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
- http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-## Authors
-
-* [Jack Garcia](http://github.com/LumbaJack)
-* [Matthew Kocurek](http://github.com/Yergidy)
-* [Prithvi Subrahmanya](http://github.com/PrithviBS)
