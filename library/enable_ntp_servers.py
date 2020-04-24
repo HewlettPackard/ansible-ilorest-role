@@ -14,39 +14,19 @@
 
 # -*- coding: utf-8 -*-
 """
-An example of getting the Manager IP
+An example of enabling NTP servers on HPE iLO systems
 """
 
 import sys
 import json
 from redfish import RedfishClient
 from redfish.rest.v1 import ServerDownOrUnreachableError
-#Instantiating module class        
 from ansible.module_utils.basic import *
 
-#from get_resource_directory import get_resource_directory
+from get_resource_directory import get_resource_directory
 
-def get_resource_directory(redfishobj):
+def enable_ntp(_redfishobj, ntp_servers):
 
-    try:
-        resource_uri = redfishobj.root.obj.Oem.Hpe.Links.ResourceDirectory['@odata.id']
-    except KeyError:
-        sys.stderr.write("Resource directory is only available on HPE servers.\n")
-        return None
-
-    response = redfishobj.get(resource_uri)
-    resources = []
-
-    if response.status == 200:
-        sys.stdout.write("\tFound resource directory at /redfish/v1/resourcedirectory" + "\n\n")
-        resources = response.dict["Instances"]
-    else:
-        sys.stderr.write("\tResource directory missing at /redfish/v1/resourcedirectory" + "\n")
-
-    return resources
-
-
-def get_ilo_ip(_redfishobj, DISABLE_RESOURCE_DIR):
     ethernet_data = {}
 
     resource_instances = get_resource_directory(_redfishobj)
@@ -66,8 +46,8 @@ def get_ilo_ip(_redfishobj, DISABLE_RESOURCE_DIR):
             _tmp = _redfishobj.get(_member['@odata.id']).obj
             ethernet_data[_member['@odata.id']] = _tmp
     else:
+        #Use Resource directory to find the relevant URI
         for instance in resource_instances:
-            #Use Resource directory to find the relevant URI
             if '#EthernetInterfaceCollection.' in instance['@odata.type'] and 'Managers' in \
                                                                         instance['@odata.id']:
                 ethernet_uri = instance['@odata.id']
@@ -78,22 +58,35 @@ def get_ilo_ip(_redfishobj, DISABLE_RESOURCE_DIR):
                 break
 
     if ethernet_data:
-        for ethernet_interface in ethernet_data:
-            sys.stdout.write("\n\nShowing iLO IPv4 Address Info on: %s\n\n" % ethernet_interface)
-            #print(json.dumps(ethernet_data[ethernet_interface]['IPv4Addresses'],\
-            #                                                            indent=4, sort_keys=True))
-    return ethernet_data
+        print("\n\nShowing all available ethernet management interfaces before changes:\n\n")
+        print(json.dumps(ethernet_data, indent=4, sort_keys=True))
+
+    body = {"Oem": {"Hpe": {"DHCPv4": {"UseNTPServers": ntp_servers}, \
+                            "DHCPv6": {"UseNTPServers": ntp_servers}}}}
+    for ethernet in ethernet_data:
+        resp = _redfishobj.patch(ethernet, body)
+        if resp.status == 400:
+            try:
+                print(json.dumps(resp.obj['error']['@Message.ExtendedInfo'], indent=4, \
+                                                                                sort_keys=True))
+            except Exception as excp:
+                sys.stderr.write("A response error occurred, unable to access iLO Extended "\
+                                 "Message Info...")
+        elif resp.status != 200:
+            sys.stderr.write("An http response of \'%s\' was returned.\n" % resp.status)
+        else:
+            print("Success!\n")
+            print(json.dumps(resp.dict, indent=4, sort_keys=True))
+            _data = _redfishobj.get(ethernet).dict
+            sys.stdout.write("\nShowing \'%s\' interface after changes:\n" % ethernet)
+            print(json.dumps(_data, indent=4, sort_keys=True))
 
 if __name__ == "__main__":
-    # When running on the server locally use the following commented values
-    #SYSTEM_URL = None
-    #LOGIN_ACCOUNT = None
-    #LOGIN_PASSWORD = None
-
     module = AnsibleModule(
-        argument_spec = dict(
+        argument_spec = dict(            
             name      = dict(required=True),
             enabled   = dict(required=True, type='bool'),
+            ntp_servers = dict(required=True, type='bool')
         )
     )
 
@@ -103,9 +96,12 @@ if __name__ == "__main__":
     # "https://10.0.0.100"
     # "https://ilo.hostname"
     SYSTEM_URL = "blobstore://."
-    LOGIN_ACCOUNT = None
-    LOGIN_PASSWORD = None
+    LOGIN_ACCOUNT = "None"
+    LOGIN_PASSWORD = "None"
 
+    # Properties
+    # NTP Servers Enable/Disable Flag
+    NTP_SERVERS = module.params['ntp_servers']
     # flag to force disable resource directory. Resource directory and associated operations are
     # intended for HPE servers.
     DISABLE_RESOURCE_DIR = False
@@ -120,6 +116,6 @@ if __name__ == "__main__":
         sys.stderr.write("ERROR: server not reachable or does not support RedFish.\n")
         sys.exit()
 
-    ilo_ip = get_ilo_ip(REDFISHOBJ, DISABLE_RESOURCE_DIR)
+    enable_ntp(REDFISHOBJ, NTP_SERVERS)
     REDFISHOBJ.logout()
-    module.exit_json(changed=True, msg=ilo_ip)
+    module.exit_json(changed=True)

@@ -15,7 +15,7 @@
 
   tasks:
      - name: Config SNMP for iLO
-       config_snmp_module:
+       configure_snmp:
          dia_ilo_inventory_name: "{{ inventory_hostname }}"
          dia_ilo_ip: "{{ ilo_ip }}"
          dia_ilo_user: "{{ ilo_user }}"
@@ -41,7 +41,7 @@
 
   tasks:
      - name: Config SNMP for iLO
-       config_snmp_module:
+       configure_snmp:
          dia_ilo_inventory_name: "{{ inventory_hostname }}"
          dia_ilo_ip: "{{ ilo_ip }}"
          dia_ilo_user: "{{ ilo_user }}"

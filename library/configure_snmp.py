@@ -14,40 +14,34 @@
 
 # -*- coding: utf-8 -*-
 """
-An example of getting the Manager IP
+An example of configuring SNMP for HPE iLO systems
 """
+DOCUMENTATION = '''
+---
+module: configure_snmp
+short_description: This module configures snmp settings
+'''
+
+EXAMPLES = '''
+- name: Add iLO user account
+  become: yes
+  configure_snmp:
+    name: "Configure SNMP"
+    enabled: True
+    snmp_mode: 'Agentless'
+    snmp_alert: False
+'''
 
 import sys
 import json
 from redfish import RedfishClient
 from redfish.rest.v1 import ServerDownOrUnreachableError
-#Instantiating module class        
-from ansible.module_utils.basic import *
 
-#from get_resource_directory import get_resource_directory
+from get_resource_directory import get_resource_directory
 
-def get_resource_directory(redfishobj):
+def configure_snmp(_redfishobj, read_communities, snmp_alerts):
 
-    try:
-        resource_uri = redfishobj.root.obj.Oem.Hpe.Links.ResourceDirectory['@odata.id']
-    except KeyError:
-        sys.stderr.write("Resource directory is only available on HPE servers.\n")
-        return None
-
-    response = redfishobj.get(resource_uri)
-    resources = []
-
-    if response.status == 200:
-        sys.stdout.write("\tFound resource directory at /redfish/v1/resourcedirectory" + "\n\n")
-        resources = response.dict["Instances"]
-    else:
-        sys.stderr.write("\tResource directory missing at /redfish/v1/resourcedirectory" + "\n")
-
-    return resources
-
-
-def get_ilo_ip(_redfishobj, DISABLE_RESOURCE_DIR):
-    ethernet_data = {}
+    snmp_service_uri = None
 
     resource_instances = get_resource_directory(_redfishobj)
     if DISABLE_RESOURCE_DIR or not resource_instances:
@@ -57,45 +51,49 @@ def get_ilo_ip(_redfishobj, DISABLE_RESOURCE_DIR):
         managers_response = _redfishobj.get(managers_uri)
         managers_members_uri = next(iter(managers_response.obj['Members']))['@odata.id']
         managers_members_response = _redfishobj.get(managers_members_uri)
-        manager_ethernet_interfaces = managers_members_response.obj['EthernetInterfaces']\
-                                                                                    ['@odata.id']
-        manager_ethernet_interfaces_response = _redfishobj.get(manager_ethernet_interfaces)
-        manager_ethernet_interfaces_members = manager_ethernet_interfaces_response.\
-                                                            obj['Members']
-        for _member in manager_ethernet_interfaces_members:
-            _tmp = _redfishobj.get(_member['@odata.id']).obj
-            ethernet_data[_member['@odata.id']] = _tmp
+        snmp_service_uri = managers_members_response.obj.Oem.Hpe.Links['Snmp']['@odata.id']
     else:
         for instance in resource_instances:
             #Use Resource directory to find the relevant URI
-            if '#EthernetInterfaceCollection.' in instance['@odata.type'] and 'Managers' in \
-                                                                        instance['@odata.id']:
-                ethernet_uri = instance['@odata.id']
-                ethernet_interfaces = _redfishobj.get(ethernet_uri).obj['Members']
-                for _ethernet_interface in ethernet_interfaces:
-                    ethernet_data[_ethernet_interface['@odata.id']] = _redfishobj.\
-                                                        get(_ethernet_interface['@odata.id']).dict
-                break
+            if '#HpeiLOSnmpService.' in instance['@odata.type']:
+                snmp_service_uri = instance['@odata.id']
 
-    if ethernet_data:
-        for ethernet_interface in ethernet_data:
-            sys.stdout.write("\n\nShowing iLO IPv4 Address Info on: %s\n\n" % ethernet_interface)
-            #print(json.dumps(ethernet_data[ethernet_interface]['IPv4Addresses'],\
-            #                                                            indent=4, sort_keys=True))
-    return ethernet_data
+    if snmp_service_uri:
+        body = {"AlertsEnabled": snmp_alerts, "ReadCommunities": read_communities}
+        resp = _redfishobj.patch(snmp_service_uri, body)
+
+        #If iLO responds with soemthing outside of 200 or 201 then lets check the iLO extended info
+        #error message to see what went wrong
+        if resp.status == 400:
+            try:
+                print(json.dumps(resp.obj['error']['@Message.ExtendedInfo'], indent=4, \
+                                                                                sort_keys=True))
+            except Exception as excp:
+                sys.stderr.write("A response error occurred, unable to access iLO Extended "\
+                                 "Message Info...")
+        elif resp.status != 200:
+            sys.stderr.write("An http response of \'%s\' was returned.\n" % resp.status)
+        else:
+            print("Success!\n")
+            print(json.dumps(resp.dict, indent=4, sort_keys=True))
 
 if __name__ == "__main__":
     # When running on the server locally use the following commented values
     #SYSTEM_URL = None
     #LOGIN_ACCOUNT = None
     #LOGIN_PASSWORD = None
-
     module = AnsibleModule(
         argument_spec = dict(
+            state     = dict(default='present', choices=['present', 'absent']),
             name      = dict(required=True),
             enabled   = dict(required=True, type='bool'),
+            snmp_mode = dict(required=True, type='str'),
+            snmp_alerts = dict(required=True, type='bool')
         )
     )
+    # Set variables based on vars fed from .yml
+    snmp_mode = module.params['snmp_mode']
+    ALERTS_ENABLED = module.params['snmp_alerts']
 
     # When running remotely connect using the secured (https://) address,
     # account name, and password to send https requests
@@ -103,9 +101,14 @@ if __name__ == "__main__":
     # "https://10.0.0.100"
     # "https://ilo.hostname"
     SYSTEM_URL = "blobstore://."
-    LOGIN_ACCOUNT = None
-    LOGIN_PASSWORD = None
+    LOGIN_ACCOUNT = "None"
+    LOGIN_PASSWORD = "None"
 
+    #Properties:
+    #read communities array
+    READ_COMMUNITIES = ["public", "", ""]
+    #alerts_enabled primitive (boolean)
+    #ALERTS_ENABLED = True
     # flag to force disable resource directory. Resource directory and associated operations are
     # intended for HPE servers.
     DISABLE_RESOURCE_DIR = False
@@ -120,6 +123,5 @@ if __name__ == "__main__":
         sys.stderr.write("ERROR: server not reachable or does not support RedFish.\n")
         sys.exit()
 
-    ilo_ip = get_ilo_ip(REDFISHOBJ, DISABLE_RESOURCE_DIR)
+    configure_snmp(REDFISHOBJ, READ_COMMUNITIES, ALERTS_ENABLED, DISABLE_RESOURCE_DIR)
     REDFISHOBJ.logout()
-    module.exit_json(changed=True, msg=ilo_ip)

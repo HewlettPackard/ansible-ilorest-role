@@ -14,7 +14,7 @@
 
 # -*- coding: utf-8 -*-
 """
-An example of getting the Manager IP
+An example of gathering the Manager NIC data
 """
 
 import sys
@@ -45,8 +45,7 @@ def get_resource_directory(redfishobj):
 
     return resources
 
-
-def get_ilo_ip(_redfishobj, DISABLE_RESOURCE_DIR):
+def get_ilo_nic(_redfishobj, get_enabled):
     ethernet_data = {}
 
     resource_instances = get_resource_directory(_redfishobj)
@@ -80,9 +79,9 @@ def get_ilo_ip(_redfishobj, DISABLE_RESOURCE_DIR):
     if ethernet_data:
         for ethernet_interface in ethernet_data:
             sys.stdout.write("\n\nShowing iLO IPv4 Address Info on: %s\n\n" % ethernet_interface)
-            #print(json.dumps(ethernet_data[ethernet_interface]['IPv4Addresses'],\
-            #                                                            indent=4, sort_keys=True))
-    return ethernet_data
+            #sys.stdout.write("\n\'Interface_Enabled\': \'%s\'\n" % json.dumps(ethernet_data\
+            #                        [ethernet_interface][get_enabled], indent=4, sort_keys=True))
+    return ethernet_data[ethernet_interface]
 
 if __name__ == "__main__":
     # When running on the server locally use the following commented values
@@ -92,20 +91,31 @@ if __name__ == "__main__":
 
     module = AnsibleModule(
         argument_spec = dict(
+            state     = dict(default='present', choices=['present', 'absent']),
             name      = dict(required=True),
             enabled   = dict(required=True, type='bool'),
+            get_active = dict(required=True, type='bool')
         )
     )
+
+    GET_ENABLED = module.params['get_active']
+    
+    # When running on the server locally use the following commented values
+    # While this example can be run remotely, it is used locally to locate the
+    # iLO IP address
+    SYSTEM_URL = "blobstore://."
+    LOGIN_ACCOUNT = "None"
+    LOGIN_PASSWORD = "None"
 
     # When running remotely connect using the secured (https://) address,
     # account name, and password to send https requests
     # SYSTEM_URL acceptable examples:
     # "https://10.0.0.100"
     # "https://ilo.hostname"
-    SYSTEM_URL = "blobstore://."
-    LOGIN_ACCOUNT = None
-    LOGIN_PASSWORD = None
-
+    
+    #Property InterfaceEnabled (This can be replaced with property key to obtain the
+    #relevant property value. Be mindful of containers)
+    #GET_ENABLED = 'InterfaceEnabled'
     # flag to force disable resource directory. Resource directory and associated operations are
     # intended for HPE servers.
     DISABLE_RESOURCE_DIR = False
@@ -120,6 +130,7 @@ if __name__ == "__main__":
         sys.stderr.write("ERROR: server not reachable or does not support RedFish.\n")
         sys.exit()
 
-    ilo_ip = get_ilo_ip(REDFISHOBJ, DISABLE_RESOURCE_DIR)
+    nic_dict = get_ilo_nic(REDFISHOBJ, GET_ENABLED)    
     REDFISHOBJ.logout()
-    module.exit_json(changed=True, msg=ilo_ip)
+    module.exit_json(changed=True, msg=nic_dict)
+  

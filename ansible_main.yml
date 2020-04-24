@@ -25,14 +25,14 @@
 
      - name: Enable secure boot
        become: yes
-       ex05_enable_secure_boot:
+       enable_secure_boot:
          name: "Enable secure boot"
          enabled: True
          boot_enabled: False
 
      - name: Add iLO user account
        become: yes
-       ex10_add_ilo_user_account:
+       add_ilo_user_account:
          name: "Add ilo user account"
          enabled: True
          new_loginname: 'name'
