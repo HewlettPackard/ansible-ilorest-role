@@ -1,0 +1,33 @@
+---
+- hosts: myhosts
+  connection: local
+  name: Set boot mode to Legacy BIOS and reboot
+  gather_facts: False
+
+  vars:
+  - attribute_name: BootMode
+  - attribute_value: Bios
+
+  tasks:
+
+  - name: Set {{ attribute_name }} to {{ attribute_value }}
+    redfish_config:
+      category: Systems
+      command: SetBiosAttributes
+      bios_attribute_name: "{{ attribute_name }}"
+      bios_attribute_value: "{{ attribute_value }}"
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+    register: bios_attribute
+
+  
+  - name: Reboot system to apply new BIOS settings
+    redfish_command:
+      category: Systems
+      command: PowerReboot
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+    when: bios_attribute.changed
+

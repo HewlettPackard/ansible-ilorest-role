@@ -1,0 +1,35 @@
+---
+- hosts: myhosts
+  connection: local
+  name: Set one-time BIOS boot device
+  gather_facts: False
+
+  # ONLY WORKS IN LEGACY BIOS MODE!
+  #
+  # Bootdevice options include: None, Pxe, Cd, Floppy, Hdd, BiosSetup,
+  # Utilities, UefiTarget & SDCard.
+
+
+  vars:
+    - bootdevice: Pxe
+
+  tasks:
+
+  - name: Set one-time boot device to {{ bootdevice }}
+    redfish_command:
+      category: Systems
+      command: SetOneTimeBoot
+      bootdevice: "{{ bootdevice }}"
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+    register: bios_onetimeboot
+
+  - name: Reboot system
+    redfish_command:
+      category: Systems
+      command: PowerReboot
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+    when: bios_onetimeboot.changed

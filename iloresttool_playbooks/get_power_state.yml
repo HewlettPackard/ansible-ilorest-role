@@ -1,0 +1,11 @@
+---
+
+- hosts: iloservers
+
+  tasks:
+  - name: get host power
+    shell: ilorest get PowerState --selector=ComputerSystem.
+    register: ilo
+    become: yes
+
+  - debug: var=ilo.stdout_lines

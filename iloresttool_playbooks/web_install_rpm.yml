@@ -1,0 +1,11 @@
+---
+
+- hosts: centosservers
+
+  tasks:
+  - name: install restful interface tool from github
+    yum:
+      name: https://github.com/HewlettPackard/python-redfish-utility/releases/download/v3.0.1/ilorest-3.0.1-7.x86_64.rpm
+      state: present
+      validate_certs: False
+    become: yes
