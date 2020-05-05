@@ -1,0 +1,11 @@
+---
+
+- hosts: iloservers
+
+  tasks:
+  - name: flash fw
+    shell: ilorest flashfwpkg <PATH_TO_FW_PKG>
+    register: ilo
+    become: yes
+
+  - debug: var=ilo.stdout_lines
