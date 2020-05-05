@@ -1,0 +1,11 @@
+---
+
+- hosts: iloservers
+
+  tasks:
+  - name: iloaccounts
+    shell: ilorest iloaccounts changepass <username> <newPass>
+    register: ilo
+    become: yes
+
+  - debug: var=ilo.stdout_lines
