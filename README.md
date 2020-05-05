@@ -11,6 +11,15 @@ pip install ansible
 
 ## Usage
 
+There are 3 ways that we can use ansible on HPE servers.
+
+1.	Using llorest interface tool   (easiest as we are leveraging the power of this stable tool)
+For this to work, ilorest interface tool need to installed using the following ansible script
+https://github.com/HewlettPackard/ansible-ilorest-role/blob/master/iloresttool_playbooks/web_install_rpm.yml
+Documentation for tool : https://hewlettpackard.github.io/python-redfish-utility/
+2.	Using iLORest libraries  (this is little complicated as we need python and ilorest libraries)
+3.	Using opensource redfish libraries given by ansible ( works, but some of the ilo functionality not implemented)
+
 Examples should be run in the root folder. Note that the library folder is automatically searched by Ansible for modules when running from playbooks. 
 
 **Example command to run restart_server.yml:**
