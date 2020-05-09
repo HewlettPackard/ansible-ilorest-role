@@ -7,8 +7,8 @@ This Ansible iLO REST role for HPE iLO is intended to provide an simple solution
 ## Directory Structure
 
     ansibleredfish_playbooks - These playbooks use opensource redfish libraries.
-    iloresttool_playbooks - These playbooks use ilorest tool and it need to be installed on the server/client.
-    ilorestlibraries_playbooks - These playbooks use ilorest library to be server.
+    iloresttool_playbooks - These playbooks use ilorest tool which needed to be installed on local/remote.
+    ilorestlibraries_playbooks - These playbooks use ilorest library which need to be installed on local/remote
     library - used by ilorestlibraries_playbooks.
     playbooks/hpe - old playbooks - may be duplicates.
     hosts - inventory of hosts, it can have ilo IPs and System IPs depending on the usage.
