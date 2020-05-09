@@ -4,7 +4,7 @@ iLOrest Ansible Usage
 
 This Ansible iLO REST role for HPE iLO is intended to provide an simple solution for user to manage server setting.  In addition to using ilorest_library, some of the playbooks also uses redfish_command, redfish_config and redfish_info from ansible package.
 
-## Directory Struture
+## Directory Structure
 
     ansibleredfish_playbooks - These playbooks use opensource redfish libraries.
     iloresttool_playbooks - These playbooks use ilorest tool and it need to be installed on the server/client.
