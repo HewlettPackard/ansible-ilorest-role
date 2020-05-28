@@ -72,18 +72,21 @@ if __name__ == "__main__":
 
     module = AnsibleModule(
         argument_spec = dict(
-            state     = dict(default='present', choices=['present', 'absent']),
-            name      = dict(required=True),
-            enabled   = dict(required=True, type='bool')
+            dia_ilo_ip=dict(required=True, type='str'),
+            dia_ilo_pass=dict(required=True, type='str'),
+            dia_ilo_user=dict(required=True, type='str'),
         )
     )
     
     # When running on the server locally use the following commented values
     # While this example can be run remotely, it is used locally to locate the
     # iLO IP address
-    SYSTEM_URL = "blobstore://."
-    LOGIN_ACCOUNT = "None"
-    LOGIN_PASSWORD = "None"
+    # SYSTEM_URL = "blobstore://."
+    # LOGIN_ACCOUNT = "None"
+    # LOGIN_PASSWORD = "None"
+    SYSTEM_URL = "https://" + module.params['dia_ilo_ip']
+    LOGIN_PASSWORD = module.params['dia_ilo_pass']
+    LOGIN_ACCOUNT = module.params['dia_ilo_user']
     # When running remotely connect using the secured (https://) address,
     # account name, and password to send https requests
     # SYSTEM_URL acceptable examples:

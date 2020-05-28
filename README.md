@@ -1,13 +1,22 @@
-iLOrest Ansible Role
-======
+iLOrest Ansible Usage
+====================
 ## Overview
 
 This Ansible iLO REST role for HPE iLO is intended to provide an simple solution for user to manage server setting.  In addition to using ilorest_library, some of the playbooks also uses redfish_command, redfish_config and redfish_info from ansible package.
 
+## Directory Structure
+
+    ansibleredfish_playbooks - These playbooks use opensource redfish libraries.
+    iloresttool_playbooks - These playbooks use ilorest tool which needed to be installed on local/remote.
+    ilorestlibraries_playbooks - These playbooks use ilorest library which need to be installed on local/remote
+    library - used by ilorestlibraries_playbooks.
+    playbooks/hpe - old playbooks - may be duplicates.
+    hosts - inventory of hosts, it can have ilo IPs and System IPs depending on the usage.
+    
 ## Install
 
-To install ansible on linux,
-pip install ansible
+    RHEL - recommended
+    To install ansible:  pip install ansible
 
 ## Usage
 
