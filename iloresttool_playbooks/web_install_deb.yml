@@ -1,6 +1,6 @@
 ---
 
-- hosts: centosservers
+- hosts: ubuntuservers, debianservers
 
   tasks:
   - name: install restful interface tool from github
