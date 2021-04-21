@@ -1,11 +1,11 @@
 ---
 
-- hosts: centosservers
+- hosts: ubuntuservers, debianservers
 
   tasks:
   - name: install restful interface tool from github
     yum:
-      name: https://github.com/HewlettPackard/python-redfish-utility/releases/download/v3.0.1/ilorest-3.0.1-6_amd64.deb
+      name: https://github.com/HewlettPackard/python-redfish-utility/releases/download/v3.1.1/ilorest-3.1.1-7_amd64.deb
       state: present
       validate_certs: False
     become: yes
