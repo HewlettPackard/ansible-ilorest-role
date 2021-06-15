@@ -44,7 +44,7 @@ A verbose version can be run with
 
 The example modules provided here are based off the example scripts in the [python-ilorest-library](https://github.com/HewlettPackard/python-ilorest-library/). These are run through local login, thus ensuring playbooks will work for every assigned server without issue.
 
-we need the boilerplate code from `ansible.module_tils.basic`:
+we need the boilerplate code from `ansible.module_utils.basic`:
 
 ```
 from ansible.module_utils.basic import AnsibleModule
