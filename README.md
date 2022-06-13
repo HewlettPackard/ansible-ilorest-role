@@ -1,3 +1,6 @@
+### Note:  Please use our latest GIT page  https://github.com/HewlettPackard/ilo-ansible-collection for latest release of HPE Ansible scripts.
+
+
 iLOrest Ansible Usage
 ====================
 ## Overview
